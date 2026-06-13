@@ -1,1 +1,43 @@
 
+yum install git maven -y
+    2  vim /jenkins_setup.sh
+    3  vim jenkins_setup.sh
+    4  chmod +x jenkins_setup.sh
+    5  ./jenkins_setup.sh
+    6  yum install docker -y
+    7  docker ps
+    8  systemctl status docker
+    9  systemctl start docker
+   10  systemctl status docker
+   11  vim /etc/group
+   12  usermod -aG docker jenkins
+   13  usermod -aG docker ec2-user
+   14  cat /etc/group
+   15  systemctl restart docker
+   16  chmod 666 /var/run/docker.sock
+   17  exit
+   18  history
+   19  exit
+   20  hostnamectl set-hostname sharef
+   21  sudo -i
+   22  docker ps -a
+   23  history
+   24  sudo -i
+   25  aws configure
+   26  aws sts get-caller-identity
+   27  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+   28  chmod +x kubectl
+   29  sudo mv kubectl /usr/local/bin/
+   30  kubectl version --client
+   31  ls
+   32  curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+   33  sudo mv /tmp/eksctl /usr/local/bin
+   34  eksctl version
+   35  ls
+   36  kubectl version --client
+   37  eksctl version
+   38  aws sts get-caller-identity
+   39  docker run -itd --name sonarcont -p 9000:9000 sonarqube
+   40  dockerps
+   41  docker ps
+   42  cd /var/lib/jenkins/workspace/project1
