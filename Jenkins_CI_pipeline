@@ -1,0 +1,110 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'maven_3.9.16'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checkout Git repo'
+                git branch: 'main',
+                    url: 'https://github.com/devopstraininghub/mindcircuit17d.git'
+            }
+        }
+
+        stage('SonarQube Scan') {
+            steps {
+                echo 'Scanning project'
+                sh 'ls -ltr'
+
+                sh '''
+                    mvn sonar:sonar \
+                    -Dsonar.host.url=http://54.243.10.10:9000 \
+                    -Dsonar.token=squ_e4005d02a661f7355367cfb08d9f43e459aebae3
+                '''
+            }
+        }
+
+        stage('Build Artifact') {
+            steps {
+                echo 'Build Artifact'
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Build Docker Image'
+
+                sh '''
+                    docker build -t skshareef/docker_practice:${BUILD_NUMBER} -f Dockerfile .
+                '''
+            }
+        }
+
+        //stage('Scan Docker Image using Trivy') {
+       //     steps {
+         //       echo 'Scanning Image'
+
+           //     sh '''
+              //      trivy image skshareef/docker_practice:${BUILD_NUMBER}
+            //    '''
+            
+        
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhub', variable: 'dockerhub')]) {
+
+                        sh '''
+                            docker login -u skshareef -p ${dockerhub}
+                        '''
+
+                        sh '''
+                            docker push skshareef/docker_practice:${BUILD_NUMBER}
+                        '''
+                    }
+
+                    echo 'Pushed to Docker Hub'
+                }
+            }
+        }
+
+        stage('Update Deployment File') {
+
+            environment {
+                GIT_REPO_NAME = "shareef-devops-project"
+                GIT_USER_NAME = "shareef-ink"
+            }
+
+            steps {
+                echo 'Update Deployment File'
+
+                withCredentials([string(credentialsId: 'githubtoken', variable: 'githubtoken')]) {
+
+                    sh '''
+                        rm -rf gitops
+                        
+                        git clone https://${githubtoken}@github.com/shareef-ink/shareef-devops-project.git gitops
+                        
+                        cd gitops
+                        
+                        git config user.email "shareefink21@gmail.com"
+                        git config user.name "shareef-ink"
+                        
+                        sed -i "s/batch17d:.*/batch17d:${BUILD_NUMBER}/g" Deploy/deploy.yaml
+
+                        git add Deploy/deploy.yaml
+                        git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                        git push origin main
+                    '''
+                }
+            }
+        }
+    }
+
+}
