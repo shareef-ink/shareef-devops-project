@@ -11,22 +11,53 @@ pipeline {
             steps {
                 echo 'Checkout Git repo'
                 git branch: 'main',
-                    url: 'https://github.com/devopstraininghub/mindcircuit17d.git'
+                    url: 'https://github.com/devopstraininghub/mindcircuit17d.git'   // Application code repo
             }
         }
 
-        stage('SonarQube Scan') {
+     stage('Build & Unit Test') {
             steps {
-                echo 'Scanning project'
-                sh 'ls -ltr'
-
-                sh '''
-                    mvn sonar:sonar \
-                    -Dsonar.host.url=http://54.243.10.10:9000 \
-                    -Dsonar.token=squ_e4005d02a661f7355367cfb08d9f43e459aebae3
-                '''
+                sh 'mvn clean test'
             }
         }
+
+
+         stage('SonarQube Scan') {
+             steps {
+                 echo 'Scanning project'
+                 sh 'ls -ltr'
+
+                 sh '''
+                     mvn sonar:sonar \
+                     -Dsonar.host.url=http://52.55.16.181:9000 \
+                     -Dsonar.token=squ_761fee6d19801dcaa366cf405c4baafcdec039bc
+                 '''
+             }
+         }
+
+
+
+
+       // stage('SonarQube Scan') {
+       //     steps {
+    //            withSonarQubeEnv('SonarQube'){
+
+      //              sh '''
+    //                    mvn clean sonar:sonar
+      //              '''
+    //            }
+      //      }
+    //    }
+
+
+     //   stage('Quality Gate') {
+     //       steps {
+     //           timeout(time: 5, unit: 'MINUTES') {
+     //               waitForQualityGate abortPipeline: true
+     //           }
+     //       }
+     //   }
+
 
         stage('Build Artifact') {
             steps {
@@ -45,15 +76,18 @@ pipeline {
             }
         }
 
-        //stage('Scan Docker Image using Trivy') {
-       //     steps {
-         //       echo 'Scanning Image'
+          stage('Scan Docker Image using Trivy') {
+              steps {
+                sh '''
+                  export TRIVY_CACHE_DIR=/data/trivy-cache
 
-           //     sh '''
-              //      trivy image skshareef/docker_practice:${BUILD_NUMBER}
-            //    '''
-            
-        
+                   trivy image \
+                   --severity CRITICAL \
+                   --exit-code 1 \
+                   skshareef/docker_practice:${BUILD_NUMBER}
+                 '''
+           }
+        }
 
         stage('Push to Docker Hub') {
             steps {
@@ -74,7 +108,7 @@ pipeline {
             }
         }
 
-        stage('Update Deployment File') {
+        stage('Update GitOps Repo') {
 
             environment {
                 GIT_REPO_NAME = "shareef-devops-project"
@@ -82,11 +116,11 @@ pipeline {
             }
 
             steps {
-                echo 'Update Deployment File'
+                echo 'Update Deployment File in GitOps Repo'
 
                 withCredentials([string(credentialsId: 'githubtoken', variable: 'githubtoken')]) {
 
-                    sh '''
+                    sh ''' 
                         rm -rf gitops
                         
                         git clone https://${githubtoken}@github.com/shareef-ink/shareef-devops-project.git gitops
@@ -95,16 +129,15 @@ pipeline {
                         
                         git config user.email "shareefink21@gmail.com"
                         git config user.name "shareef-ink"
-                        
+
                         sed -i "s/batch17d:.*/batch17d:${BUILD_NUMBER}/g" Deploy/deploy.yaml
 
                         git add Deploy/deploy.yaml
-                        git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                        git commit -m "Update deployment image to version ${BUILD_NUMBER}" 
                         git push origin main
                     '''
                 }
             }
         }
     }
-
 }
