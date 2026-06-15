@@ -24,6 +24,6 @@ spec:
     spec:
       containers: 
       - name: facebook-container
-        image: skshareef/docker_practice:7
+        image: skshareef/docker_practice:8
         ports:
         - containerPort: 8080
